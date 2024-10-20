@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post-Operative MJOA Score Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f9fc;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="number"], select, .checkbox-wrapper, input[type="range"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            padding: 0;
+        }
+        .checkbox-wrapper input {
+            width: auto;
+            margin-right: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+        }
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .slider-wrapper input[type="range"] {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .slider-wrapper input[type="number"] {
+            width: 60px;
+            flex: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Post-Operative MJOA Score Calculator</h1>
+        <form id="calculator-form">
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="compressionType" name="compressionType">
+                <label for="compressionType" style="margin: 0;">Single-level Compression</label>
+            </div>
+
+            <label for="durationOfSymptoms">Duration of Symptoms (Months):</label>
+            <div class="slider-wrapper">
+                <input type="range" id="durationOfSymptomsRange" name="durationOfSymptomsRange" min="0" max="100" value="12" oninput="syncDurationOfSymptoms(this.value)">
+                <input type="number" id="durationOfSymptoms" name="durationOfSymptoms" min="0" max="100" value="12" oninput="syncDurationOfSymptoms(this.value)">
+            </div>
+
+            <label for="age">Age:</label>
+            <div class="slider-wrapper">
+                <input type="range" id="ageRange" name="ageRange" min="0" max="100" value="50" oninput="syncAge(this.value)">
+                <input type="number" id="age" name="age" min="0" max="100" value="50" oninput="syncAge(this.value)">
+            </div>
+
+            <label for="preMJOA">Pre-MJOA:</label>
+            <div class="slider-wrapper">
+                <input type="range" id="preMJOARange" name="preMJOARange" min="0" max="18" value="9" oninput="syncPreMJOA(this.value)">
+                <input type="number" id="preMJOA" name="preMJOA" min="0" max="18" value="9" oninput="syncPreMJOA(this.value)">
+            </div>
+
+            <button type="button" onclick="calculateMJOA()">Calculate Post-op MJOA</button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        function syncDurationOfSymptoms(value) {
+            document.getElementById('durationOfSymptoms').value = value;
+            document.getElementById('durationOfSymptomsRange').value = value;
+        }
+
+        function syncAge(value) {
+            document.getElementById('age').value = value;
+            document.getElementById('ageRange').value = value;
+        }
+
+        function syncPreMJOA(value) {
+            document.getElementById('preMJOA').value = value;
+            document.getElementById('preMJOARange').value = value;
+        }
+
+        function calculateMJOA() {
+            // Get input values
+            const preMJOA = parseFloat(document.getElementById('preMJOA').value);
+            const age = parseFloat(document.getElementById('age').value);
+            const durationOfSymptoms = parseFloat(document.getElementById('durationOfSymptoms').value);
+            const compressionType = document.getElementById('compressionType').checked ? 1 : 0;
+
+            // Coefficients for the linear regression model
+            const coefPreMJOA = 0.39406184;
+            const coefAge = -0.06414894;
+            const coefCompression = -7.67332851;  // Applied if 'Single-level compression'
+            const coefDurationOfSymptoms = -0.11416290;
+
+            // Calculate post-op MJOA score
+            const postOpMJOA = (coefPreMJOA * preMJOA) + (coefAge * age) + (compressionType * coefCompression) + (coefDurationOfSymptoms * durationOfSymptoms);
+
+            // Display the result
+            document.getElementById('result').innerHTML = `
+                <strong>Predicted Post-op MJOA Score:</strong><br>
+                ${postOpMJOA.toFixed(2)}
+            `;
+        }
+    </script>
+</body>
+</html>
