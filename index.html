@@ -100,10 +100,10 @@
                 <input type="number" id="duration" name="duration" min="0" max="100" value="12" oninput="syncDuration(this.value)">
             </div>
 
-            <label for="compressionType">Compression Type:</label>
+            <label for="compressionType">Operation Type:</label>
             <select id="compressionType" name="compressionType" required>
-                <option value="Multi">Multi</option>
-                <option value="Single">Single</option>
+                <option value="Multi">Multi-level operation</option>
+                <option value="Single">Single-level operation</option>
             </select>
 
             <button type="button" onclick="calculateOutcomes()">Calculate</button>
@@ -132,20 +132,21 @@
             const preMJOA = parseFloat(document.getElementById('preMJOA').value);
             const age = parseFloat(document.getElementById('age').value);
             const duration = parseFloat(document.getElementById('duration').value);
-            const compressionType = document.getElementById('compressionType').value === 'Single' ? 1 : 0;
+            const compressionType = document.getElementById('compressionType').value === 'Multi' ? 1 : 0;
 
-            // Severe and Mild GLM equations
-            const logitSevere = -2.45888 - 0.36240 * preMJOA + 0.06830 * age;
+            // Updated Severe GLM model
+            const logitSevere = 4.0749 - 2.5141 * compressionType - 0.4811 * preMJOA;
             const pSevere = 1 / (1 + Math.exp(-logitSevere));
 
-            const logitMild = 2.55447 + 0.27770 * preMJOA - 0.05245 * age - 2.27370 * compressionType;
+            // Mild GLM model
+            const logitMild = -4.27614 + 1.81506 * compressionType + 0.33405 * preMJOA;
             const pMild = 1 / (1 + Math.exp(-logitMild));
 
-            // Predicted MJOA using duration for the relevant model
-            const intercept = 20.67512;
+            // Predicted post-op MJOA using the linear regression model
+            const intercept = 13.00179;
             const coefPreMJOA = 0.39406;
             const coefAge = -0.06415;
-            const coefCompression = -7.67333 * compressionType;
+            const coefCompression = 7.67333 * compressionType;
             const coefDuration = -0.11416 * duration;
             const predictedMJOA = Math.min(18, Math.max(3, intercept + coefPreMJOA * preMJOA + coefAge * age + coefCompression + coefDuration));
 
@@ -153,7 +154,7 @@
             const likelyOutcome = pMild > pSevere ? 'Mild' : 'Severe';
             const probability = likelyOutcome === 'Mild' ? pMild : pSevere;
 
-            // Display the results
+            // Display the result
             document.getElementById('result').innerHTML = `
                 <strong>Most Likely Outcome:</strong> ${likelyOutcome} (Probability: ${(probability * 100).toFixed(2)}%)<br>
                 <strong>Predicted Post-op MJOA Score:</strong> ${predictedMJOA.toFixed(2)}
