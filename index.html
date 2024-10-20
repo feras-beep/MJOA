@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Post-Operative MJOA Score Calculator</title>
+    <title>Post-Operative MJOA and Outcome Predictor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,23 +34,12 @@
             font-weight: bold;
             color: #555;
         }
-        input[type="number"], select, .checkbox-wrapper, input[type="range"] {
+        input[type="number"], select {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
             border: 1px solid #ccc;
             border-radius: 5px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        .checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            padding: 0;
-        }
-        .checkbox-wrapper input {
-            width: auto;
-            margin-right: 10px;
         }
         button {
             width: 100%;
@@ -75,92 +64,57 @@
             font-size: 18px;
             color: #333;
         }
-        .slider-wrapper {
-            display: flex;
-            align-items: center;
-        }
-        .slider-wrapper input[type="range"] {
-            flex: 1;
-            margin-right: 10px;
-        }
-        .slider-wrapper input[type="number"] {
-            width: 60px;
-            flex: none;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Post-Operative MJOA Score Calculator</h1>
+        <h1>Post-Operative MJOA and Outcome Predictor</h1>
         <form id="calculator-form">
-            <div class="checkbox-wrapper">
-                <input type="checkbox" id="compressionType" name="compressionType">
-                <label for="compressionType" style="margin: 0;">Single-level Compression</label>
-            </div>
-
-            <label for="durationOfSymptoms">Duration of Symptoms (Months):</label>
-            <div class="slider-wrapper">
-                <input type="range" id="durationOfSymptomsRange" name="durationOfSymptomsRange" min="0" max="100" value="12" oninput="syncDurationOfSymptoms(this.value)">
-                <input type="number" id="durationOfSymptoms" name="durationOfSymptoms" min="0" max="100" value="12" oninput="syncDurationOfSymptoms(this.value)">
-            </div>
-
+            <label for="preMJOA">Pre-op MJOA:</label>
+            <input type="number" id="preMJOA" name="preMJOA" required>
+            
             <label for="age">Age:</label>
-            <div class="slider-wrapper">
-                <input type="range" id="ageRange" name="ageRange" min="0" max="100" value="50" oninput="syncAge(this.value)">
-                <input type="number" id="age" name="age" min="0" max="100" value="50" oninput="syncAge(this.value)">
-            </div>
+            <input type="number" id="age" name="age" required>
+            
+            <label for="compressionType">Compression Type:</label>
+            <select id="compressionType" name="compressionType" required>
+                <option value="Multi">Multi</option>
+                <option value="Single">Single</option>
+            </select>
 
-            <label for="preMJOA">Pre-MJOA:</label>
-            <div class="slider-wrapper">
-                <input type="range" id="preMJOARange" name="preMJOARange" min="0" max="18" value="9" oninput="syncPreMJOA(this.value)">
-                <input type="number" id="preMJOA" name="preMJOA" min="0" max="18" value="9" oninput="syncPreMJOA(this.value)">
-            </div>
-
-            <button type="button" onclick="calculateMJOA()">Calculate Post-op MJOA</button>
+            <button type="button" onclick="calculateOutcomes()">Calculate</button>
         </form>
         <div class="result" id="result"></div>
     </div>
 
     <script>
-        function syncDurationOfSymptoms(value) {
-            document.getElementById('durationOfSymptoms').value = value;
-            document.getElementById('durationOfSymptomsRange').value = value;
-        }
-
-        function syncAge(value) {
-            document.getElementById('age').value = value;
-            document.getElementById('ageRange').value = value;
-        }
-
-        function syncPreMJOA(value) {
-            document.getElementById('preMJOA').value = value;
-            document.getElementById('preMJOARange').value = value;
-        }
-
-        function calculateMJOA() {
-            // Get input values
+        function calculateOutcomes() {
             const preMJOA = parseFloat(document.getElementById('preMJOA').value);
             const age = parseFloat(document.getElementById('age').value);
-            const durationOfSymptoms = parseFloat(document.getElementById('durationOfSymptoms').value);
-            const compressionType = document.getElementById('compressionType').checked ? 1 : 0;
+            const compressionType = document.getElementById('compressionType').value === 'Single' ? 1 : 0;
 
-            // Coefficients for the linear regression model
-            const intercept = 20.67512;  // From model output
+            // Severe and Mild GLM equations
+            const logitSevere = -2.45888 - 0.36240 * preMJOA + 0.06830 * age;
+            const pSevere = 1 / (1 + Math.exp(-logitSevere));
+
+            const logitMild = 2.55447 + 0.27770 * preMJOA - 0.05245 * age - 2.27370 * compressionType;
+            const pMild = 1 / (1 + Math.exp(-logitMild));
+
+            // Predicted MJOA
+            const intercept = 20.67512;
             const coefPreMJOA = 0.39406;
             const coefAge = -0.06415;
-            const coefCompression = -7.67333;  // Applied if 'Single-level compression'
-            const coefDurationOfSymptoms = -0.11416;
+            const coefCompression = -7.67333 * compressionType;
+            const predictedMJOA = Math.min(18, Math.max(3, intercept + coefPreMJOA * preMJOA + coefAge * age + coefCompression));
 
-            // Calculate post-op MJOA score
-            let postOpMJOA = intercept + (coefPreMJOA * preMJOA) + (coefAge * age) + (compressionType * coefCompression) + (coefDurationOfSymptoms * durationOfSymptoms);
+            // Determine the most likely outcome
+            const likelyOutcome = pMild > pSevere ? 'Mild' : 'Severe';
+            const probability = likelyOutcome === 'Mild' ? pMild : pSevere;
 
-            // Ensure the score is between 3 and 18
-            postOpMJOA = Math.min(18, Math.max(3, postOpMJOA));
-
-            // Display the result
+            // Display the results
             document.getElementById('result').innerHTML = `
-                <strong>Predicted Post-op MJOA Score:</strong><br>
-                ${postOpMJOA.toFixed(2)}
+                <strong>Most Likely Outcome:</strong> ${likelyOutcome} (Probability: ${(probability * 100).toFixed(2)}%)<br>
+                <strong>Predicted Post-op MJOA Score:</strong> ${predictedMJOA.toFixed(2)}
             `;
         }
     </script>
