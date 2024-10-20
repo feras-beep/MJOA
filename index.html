@@ -152,7 +152,10 @@
             const coefDurationOfSymptoms = -0.11416;
 
             // Calculate post-op MJOA score
-            const postOpMJOA = intercept + (coefPreMJOA * preMJOA) + (coefAge * age) + (compressionType * coefCompression) + (coefDurationOfSymptoms * durationOfSymptoms);
+            let postOpMJOA = intercept + (coefPreMJOA * preMJOA) + (coefAge * age) + (compressionType * coefCompression) + (coefDurationOfSymptoms * durationOfSymptoms);
+
+            // Ensure the score is between 3 and 18
+            postOpMJOA = Math.min(18, Math.max(3, postOpMJOA));
 
             // Display the result
             document.getElementById('result').innerHTML = `
@@ -163,4 +166,3 @@
     </script>
 </body>
 </html>
-
