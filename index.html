@@ -34,6 +34,18 @@
             font-weight: bold;
             color: #555;
         }
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .slider-wrapper input[type="range"] {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .slider-wrapper input[type="number"] {
+            width: 60px;
+            flex: none;
+        }
         input[type="number"], select {
             width: 100%;
             padding: 12px;
@@ -71,11 +83,23 @@
         <h1>Post-Operative MJOA and Outcome Predictor</h1>
         <form id="calculator-form">
             <label for="preMJOA">Pre-op MJOA:</label>
-            <input type="number" id="preMJOA" name="preMJOA" required>
-            
+            <div class="slider-wrapper">
+                <input type="range" id="preMJOARange" name="preMJOARange" min="0" max="18" value="9" oninput="syncPreMJOA(this.value)">
+                <input type="number" id="preMJOA" name="preMJOA" min="0" max="18" value="9" oninput="syncPreMJOA(this.value)">
+            </div>
+
             <label for="age">Age:</label>
-            <input type="number" id="age" name="age" required>
-            
+            <div class="slider-wrapper">
+                <input type="range" id="ageRange" name="ageRange" min="0" max="100" value="50" oninput="syncAge(this.value)">
+                <input type="number" id="age" name="age" min="0" max="100" value="50" oninput="syncAge(this.value)">
+            </div>
+
+            <label for="duration">Duration of Symptoms (months):</label>
+            <div class="slider-wrapper">
+                <input type="range" id="durationRange" name="durationRange" min="0" max="100" value="12" oninput="syncDuration(this.value)">
+                <input type="number" id="duration" name="duration" min="0" max="100" value="12" oninput="syncDuration(this.value)">
+            </div>
+
             <label for="compressionType">Compression Type:</label>
             <select id="compressionType" name="compressionType" required>
                 <option value="Multi">Multi</option>
@@ -88,9 +112,26 @@
     </div>
 
     <script>
+        // Synchronize range and number inputs
+        function syncPreMJOA(value) {
+            document.getElementById('preMJOA').value = value;
+            document.getElementById('preMJOARange').value = value;
+        }
+
+        function syncAge(value) {
+            document.getElementById('age').value = value;
+            document.getElementById('ageRange').value = value;
+        }
+
+        function syncDuration(value) {
+            document.getElementById('duration').value = value;
+            document.getElementById('durationRange').value = value;
+        }
+
         function calculateOutcomes() {
             const preMJOA = parseFloat(document.getElementById('preMJOA').value);
             const age = parseFloat(document.getElementById('age').value);
+            const duration = parseFloat(document.getElementById('duration').value);
             const compressionType = document.getElementById('compressionType').value === 'Single' ? 1 : 0;
 
             // Severe and Mild GLM equations
@@ -100,12 +141,13 @@
             const logitMild = 2.55447 + 0.27770 * preMJOA - 0.05245 * age - 2.27370 * compressionType;
             const pMild = 1 / (1 + Math.exp(-logitMild));
 
-            // Predicted MJOA
+            // Predicted MJOA using duration for the relevant model
             const intercept = 20.67512;
             const coefPreMJOA = 0.39406;
             const coefAge = -0.06415;
             const coefCompression = -7.67333 * compressionType;
-            const predictedMJOA = Math.min(18, Math.max(3, intercept + coefPreMJOA * preMJOA + coefAge * age + coefCompression));
+            const coefDuration = -0.11416 * duration;
+            const predictedMJOA = Math.min(18, Math.max(3, intercept + coefPreMJOA * preMJOA + coefAge * age + coefCompression + coefDuration));
 
             // Determine the most likely outcome
             const likelyOutcome = pMild > pSevere ? 'Mild' : 'Severe';
