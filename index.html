@@ -145,13 +145,14 @@
             const compressionType = document.getElementById('compressionType').checked ? 1 : 0;
 
             // Coefficients for the linear regression model
-            const coefPreMJOA = 0.39406184;
-            const coefAge = -0.06414894;
-            const coefCompression = -7.67332851;  // Applied if 'Single-level compression'
-            const coefDurationOfSymptoms = -0.11416290;
+            const intercept = 20.67512;  // From model output
+            const coefPreMJOA = 0.39406;
+            const coefAge = -0.06415;
+            const coefCompression = -7.67333;  // Applied if 'Single-level compression'
+            const coefDurationOfSymptoms = -0.11416;
 
             // Calculate post-op MJOA score
-            const postOpMJOA = (coefPreMJOA * preMJOA) + (coefAge * age) + (compressionType * coefCompression) + (coefDurationOfSymptoms * durationOfSymptoms);
+            const postOpMJOA = intercept + (coefPreMJOA * preMJOA) + (coefAge * age) + (compressionType * coefCompression) + (coefDurationOfSymptoms * durationOfSymptoms);
 
             // Display the result
             document.getElementById('result').innerHTML = `
@@ -162,3 +163,4 @@
     </script>
 </body>
 </html>
+
